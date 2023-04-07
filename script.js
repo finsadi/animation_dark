@@ -1,4 +1,3 @@
-
 const canvas = document.getElementById('stockAnimation');
 const ctx = canvas.getContext('2d');
 
@@ -112,34 +111,52 @@ function update() {
     }
 }
 
+const desiredFrameRate = 30; // Adjust frame rate as needed
+let pngFrames = [];
+
 function captureFrame() {
     let base64Image = canvas.toDataURL("image/png");
     pngFrames.push(base64Image);
-  }
-  
-  function renderAnimation() {
+}
+
+function renderAnimation() {
     draw();
     update();
-  }
-  
-  function mainLoop() {
+}
+
+function mainLoop() {
     renderAnimation();
     captureFrame();
-    setTimeout(mainLoop, frameDuration);
-  }
-  
-  let frameDuration = 1000 / desiredFrameRate;
-  let pngFrames = [];
-  let desiredFrameRate = 30; // Adjust frame rate as needed
-  mainLoop();
-  
-  // ... [FFmpeg.js function encodeVideo] ...
-  
-  // ... [createDownloadLink function] ...
-  
-  // Trigger the encodeVideo() function when your animation is complete or when a button is clicked.
-  document.getElementById("your-button-id").addEventListener("click", encodeVideo);
-  const exportVideoBtn = document.getElementById("export-video-btn");
-  exportVideoBtn.addEventListener("click", () => {
+    setTimeout(mainLoop, 1000 / desiredFrameRate);
+}
+
+mainLoop();
+
+function encodeVideo() {
+    const output = new Whammy.Video(desiredFrameRate);
+
+    for (const frame of pngFrames) {
+        const img = new Image();
+        img.src = frame;
+        output.add(img);
+    }
+
+    const blob = output.compile();
+    createDownloadLink(blob);
+}
+
+function createDownloadLink(blob) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    document.body.appendChild(a);
+    a.style.display = "none";
+    a.href = url;
+    a.download = "animation.mp4";
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+const exportVideoBtn = document.getElementById("export-video-btn");
+exportVideoBtn.addEventListener("click", () => {
     encodeVideo();
-  });
+});
