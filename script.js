@@ -139,3 +139,7 @@ function captureFrame() {
   
   // Trigger the encodeVideo() function when your animation is complete or when a button is clicked.
   document.getElementById("your-button-id").addEventListener("click", encodeVideo);
+  const exportVideoBtn = document.getElementById("export-video-btn");
+  exportVideoBtn.addEventListener("click", () => {
+    encodeVideo();
+  });
