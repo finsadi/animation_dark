@@ -47,6 +47,7 @@ const iconsSrc = [
     ]
 ];
 
+
 class StockIcon {
     constructor(angle, ellipseIndex, iconIndex) {
         this.image = new Image();
@@ -59,100 +60,81 @@ class StockIcon {
 
     draw() {
         ctx.save();
-        ctx.translate(centerX, centerY);
-        ctx.rotate(this.angle);
-        ctx.translate
-        ctx.drawImage(this.image, -this.size / 2, -this.size / 2, this.size, this.size);
+        ctx.drawImage(this.image, this.x - this.size / 2, this.y - this.size / 2, this.size, this.size);
         ctx.restore();
     }
 
     update() {
         this.angle += this.speed;
+
+        const ellipse = ellipseParams[this.ellipseIndex];
+        this.x = centerX + (ellipse.width / 2) * Math.cos(this.angle) * Math.cos(ellipse.rotation) - (ellipse.height / 2) * Math.sin(this.angle) * Math.sin(ellipse.rotation);
+        this.y = centerY + (ellipse.width / 2) * Math.cos(this.angle) * Math.sin(ellipse.rotation) + (ellipse.height / 2) * Math.sin(this.angle) * Math.cos(ellipse.rotation);
     }
 }
 
 const stockIcons = [];
-for (let i = 0; i < 5; i++) {
-    stockIcons.push(new StockIcon((i * (Math.PI * 2)) / 5, 0, i));
-    stockIcons.push(new StockIcon((i * (Math.PI * 2)) / 5, 1, i));
+for (let i = 0; i < 2; i++) {
+    for (let j = 0; j < 5; j++) {
+        const angle = (j / 5) * (2 * Math.PI);
+        stockIcons.push(new StockIcon(angle, i, j));
+    }
 }
 
-function drawEllipses() {
+
+function drawEllipse(ellipse) {
     ctx.save();
-    ctx.translate(centerX, centerY);
+    ctx.beginPath();
+    ctx.ellipse(centerX, centerY, ellipse.width / 2, ellipse.height / 2, ellipse.rotation, 0, 2 * Math.PI);
 
-    for (let i = 0; i < ellipseParams.length; i++) {
-        ctx.beginPath();
-        ctx.ellipse(0, 0, ellipseParams[i].width, ellipseParams[i].height, ellipseParams[i].rotation, 0, Math.PI * 2);
-        let gradient = ctx.createLinearGradient(0, -ellipseParams[i].height, 0, ellipseParams[i].height);
-        gradient.addColorStop(0, 'rgba(0, 224, 145, 0.2)');
-        gradient.addColorStop(1, 'rgba(255, 255, 255, 0.2)');
-        ctx.strokeStyle = gradient;
-        ctx.lineWidth = 2;
-        ctx.stroke();
-    }
-
+    // Create a gradient
+    const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+    gradient.addColorStop(0, 'rgba(0, 224, 145, 0.2)');
+    gradient.addColorStop(1, 'rgba(255, 255, 255, 0.2)');
+    ctx.strokeStyle = gradient;
+    
+    ctx.lineWidth = 1;
+    ctx.filter = 'blur(1px)';
+    ctx.closePath();
+    ctx.stroke();
     ctx.restore();
 }
 
-function draw() {
+
+function animate() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawEllipses();
 
-    for (const icon of stockIcons) {
-        icon.draw();
-    }
-}
+    ellipseParams.forEach(ellipse => drawEllipse(ellipse));
 
-function update() {
-    for (const icon of stockIcons) {
-        icon.update();
-    }
-}
-
-function captureFrame() {
-    let base64Image = canvas.toDataURL("image/png");
-    pngFrames.push(base64Image);
-}
-
-function renderAnimation() {
-    draw();
-    update();
-}
-
-function mainLoop() {
-    renderAnimation();
-    captureFrame();
-    setTimeout(mainLoop, frameDuration);
-}
-
-let desiredFrameRate = 30; // Adjust frame rate as needed
-let frameDuration = 1000 / desiredFrameRate;
-let pngFrames = [];
-
-function encodeVideo() {
-    let encoder = new Whammy.Video(desiredFrameRate);
-    for (let i = 0; i < pngFrames.length; i++) {
-        encoder.add(canvasDataURLToBlob(pngFrames[i]));
-    }
-    encoder.compile(false, function (output) {
-        createDownloadLink(output);
+    stockIcons.forEach(stockIcon => {
+        stockIcon.update();
+        stockIcon.draw();
     });
+
+    requestAnimationFrame(animate);
 }
 
-function createDownloadLink(blob) {
-    let url = URL.createObjectURL(blob);
-    let a = document.createElement("a");
-    document.body.appendChild(a);
 
-    a.style = "display: none;";
-    a.href = url;
-    a.download = "animation.mp4";
-    a.click();
-    window.URL.revokeObjectURL(url);
-}
+animate();
 
-const exportVideoBtn = document.getElementById("export-video-btn");
-exportVideoBtn.addEventListener("click", () => {
-    encodeVideo();
+window.addEventListener('resize', () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const ellipseWidthFactor = canvas.width / initialCanvasWidth;
+    const ellipseHeightFactor = canvas.height / initialCanvasHeight;
+
+    ellipseParams[0].width = Math.min(canvas.width * 0.9, 1310.73 * ellipseWidthFactor);
+    ellipseParams[0].height = Math.min(canvas.height * 0.9, 508.33 * ellipseHeightFactor);
+
+    ellipseParams[1].width = Math.min(canvas.width * 0.9, 1027.36 * ellipseWidthFactor);
+    ellipseParams[1].height = Math.min(canvas.height * 0.9, 593.42 * ellipseHeightFactor);
+
+    centerX = canvas.width / 2;
+    centerY = canvas.height / 2;
+
+    const speedFactor = Math.min(canvas.width, canvas.height) / 1080;
+    stockIcons.forEach(stockIcon => {
+        stockIcon.speed = 0.0026 * speedFactor;
+    });
 });
