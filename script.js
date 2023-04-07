@@ -1,3 +1,4 @@
+
 const canvas = document.getElementById('stockAnimation');
 const ctx = canvas.getContext('2d');
 
@@ -47,7 +48,6 @@ const iconsSrc = [
     ]
 ];
 
-
 class StockIcon {
     constructor(angle, ellipseIndex, iconIndex) {
         this.image = new Image();
@@ -60,81 +60,82 @@ class StockIcon {
 
     draw() {
         ctx.save();
-        ctx.drawImage(this.image, this.x - this.size / 2, this.y - this.size / 2, this.size, this.size);
+        ctx.translate(centerX, centerY);
+        ctx.rotate(this.angle);
+        ctx.translate(ellipseParams[this.ellipseIndex].width * Math.cos(this.angle), -ellipseParams[this.ellipseIndex].height * Math.sin(this.angle));
+        ctx.rotate(-this.angle);
+        ctx.drawImage(this.image, -this.size / 2, -this.size / 2, this.size, this.size);
         ctx.restore();
     }
 
     update() {
         this.angle += this.speed;
-
-        const ellipse = ellipseParams[this.ellipseIndex];
-        this.x = centerX + (ellipse.width / 2) * Math.cos(this.angle) * Math.cos(ellipse.rotation) - (ellipse.height / 2) * Math.sin(this.angle) * Math.sin(ellipse.rotation);
-        this.y = centerY + (ellipse.width / 2) * Math.cos(this.angle) * Math.sin(ellipse.rotation) + (ellipse.height / 2) * Math.sin(this.angle) * Math.cos(ellipse.rotation);
     }
 }
 
 const stockIcons = [];
-for (let i = 0; i < 2; i++) {
-    for (let j = 0; j < 5; j++) {
-        const angle = (j / 5) * (2 * Math.PI);
-        stockIcons.push(new StockIcon(angle, i, j));
-    }
+for (let i = 0; i < 5; i++) {
+    stockIcons.push(new StockIcon((i * (Math.PI * 2)) / 5, 0, i));
+    stockIcons.push(new StockIcon((i * (Math.PI * 2)) / 5, 1, i));
 }
 
-
-function drawEllipse(ellipse) {
+function drawEllipses() {
     ctx.save();
-    ctx.beginPath();
-    ctx.ellipse(centerX, centerY, ellipse.width / 2, ellipse.height / 2, ellipse.rotation, 0, 2 * Math.PI);
+    ctx.translate(centerX, centerY);
 
-    // Create a gradient
-    const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
-    gradient.addColorStop(0, 'rgba(0, 224, 145, 0.2)');
-    gradient.addColorStop(1, 'rgba(255, 255, 255, 0.2)');
-    ctx.strokeStyle = gradient;
-    
-    ctx.lineWidth = 1;
-    ctx.filter = 'blur(1px)';
-    ctx.closePath();
-    ctx.stroke();
+    for (let i = 0; i < ellipseParams.length; i++) {
+        ctx.beginPath();
+        ctx.ellipse(0, 0, ellipseParams[i].width, ellipseParams[i].height, ellipseParams[i].rotation, 0, Math.PI * 2);
+        let gradient = ctx.createLinearGradient(0, -ellipseParams[i].height, 0, ellipseParams[i].height);
+        gradient.addColorStop(0, 'rgba(0, 224, 145, 0.2)');
+        gradient.addColorStop(1, 'rgba(255, 255, 255, 0.2)');
+        ctx.strokeStyle = gradient;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    }
+
     ctx.restore();
 }
 
-
-function animate() {
+function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawEllipses();
 
-    ellipseParams.forEach(ellipse => drawEllipse(ellipse));
-
-    stockIcons.forEach(stockIcon => {
-        stockIcon.update();
-        stockIcon.draw();
-    });
-
-    requestAnimationFrame(animate);
+    for (const icon of stockIcons) {
+        icon.draw();
+    }
 }
 
+function update() {
+    for (const icon of stockIcons) {
+        icon.update();
+    }
+}
 
-animate();
-
-window.addEventListener('resize', () => {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
-    const ellipseWidthFactor = canvas.width / initialCanvasWidth;
-    const ellipseHeightFactor = canvas.height / initialCanvasHeight;
-
-    ellipseParams[0].width = Math.min(canvas.width * 0.9, 1310.73 * ellipseWidthFactor);
-    ellipseParams[0].height = Math.min(canvas.height * 0.9, 508.33 * ellipseHeightFactor);
-
-    ellipseParams[1].width = Math.min(canvas.width * 0.9, 1027.36 * ellipseWidthFactor);
-    ellipseParams[1].height = Math.min(canvas.height * 0.9, 593.42 * ellipseHeightFactor);
-
-    centerX = canvas.width / 2;
-    centerY = canvas.height / 2;
-
-    const speedFactor = Math.min(canvas.width, canvas.height) / 1080;
-    stockIcons.forEach(stockIcon => {
-        stockIcon.speed = 0.0026 * speedFactor;
-    });
-});
+function captureFrame() {
+    let base64Image = canvas.toDataURL("image/png");
+    pngFrames.push(base64Image);
+  }
+  
+  function renderAnimation() {
+    draw();
+    update();
+  }
+  
+  function mainLoop() {
+    renderAnimation();
+    captureFrame();
+    setTimeout(mainLoop, frameDuration);
+  }
+  
+  let frameDuration = 1000 / desiredFrameRate;
+  let pngFrames = [];
+  let desiredFrameRate = 30; // Adjust frame rate as needed
+  mainLoop();
+  
+  // ... [FFmpeg.js function encodeVideo] ...
+  
+  // ... [createDownloadLink function] ...
+  
+  // Trigger the encodeVideo() function when your animation is complete or when a button is clicked.
+  document.getElementById("your-button-id").addEventListener("click", encodeVideo);
