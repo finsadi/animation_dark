@@ -9,13 +9,6 @@ html, body {
     overflow: hidden;
 }
 
-body {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-image: radial-gradient(#00E091, black);
-}
-
 canvas {
     position: absolute;
     top: 0;
