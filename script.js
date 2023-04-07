@@ -61,8 +61,7 @@ class StockIcon {
         ctx.save();
         ctx.translate(centerX, centerY);
         ctx.rotate(this.angle);
-        ctx.translate(ellipseParams[this.ellipseIndex].width * Math.cos(this.angle), -ellipseParams[this.ellipseIndex].height * Math.sin(this.angle));
-        ctx.rotate(-this.angle);
+        ctx.translate
         ctx.drawImage(this.image, -this.size / 2, -this.size / 2, this.size, this.size);
         ctx.restore();
     }
@@ -111,9 +110,6 @@ function update() {
     }
 }
 
-const desiredFrameRate = 30; // Adjust frame rate as needed
-let pngFrames = [];
-
 function captureFrame() {
     let base64Image = canvas.toDataURL("image/png");
     pngFrames.push(base64Image);
@@ -127,33 +123,33 @@ function renderAnimation() {
 function mainLoop() {
     renderAnimation();
     captureFrame();
-    setTimeout(mainLoop, 1000 / desiredFrameRate);
+    setTimeout(mainLoop, frameDuration);
 }
 
-mainLoop();
+let desiredFrameRate = 30; // Adjust frame rate as needed
+let frameDuration = 1000 / desiredFrameRate;
+let pngFrames = [];
 
 function encodeVideo() {
-    const output = new Whammy.Video(desiredFrameRate);
-
-    for (const frame of pngFrames) {
-        const img = new Image();
-        img.src = frame;
-        output.add(img);
+    let encoder = new Whammy.Video(desiredFrameRate);
+    for (let i = 0; i < pngFrames.length; i++) {
+        encoder.add(canvasDataURLToBlob(pngFrames[i]));
     }
-
-    const blob = output.compile();
-    createDownloadLink(blob);
+    encoder.compile(false, function (output) {
+        createDownloadLink(output);
+    });
 }
 
 function createDownloadLink(blob) {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
+    let url = URL.createObjectURL(blob);
+    let a = document.createElement("a");
     document.body.appendChild(a);
-    a.style.display = "none";
+
+    a.style = "display: none;";
     a.href = url;
     a.download = "animation.mp4";
     a.click();
-    URL.revokeObjectURL(url);
+    window.URL.revokeObjectURL(url);
 }
 
 const exportVideoBtn = document.getElementById("export-video-btn");
